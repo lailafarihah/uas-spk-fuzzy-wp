@@ -85,7 +85,7 @@ if 'kriteria' in st.session_state and 'alternatif' in st.session_state:
     Hitung= st.button("Hitung")
 
 # Setelah Klik Tombol Hitung
-if st.button("Hitung"):
+if Hitung:
     # Tampilkan bobot yang telah diinput
     st.write("### Bobot")
     for i, bobot in enumerate(st.session_state.bobot):
