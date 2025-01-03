@@ -81,8 +81,8 @@ if 'kriteria' in st.session_state and 'alternatif' in st.session_state:
     index = [f"A{i+1}" for i in range(alternatif)]
     df_alternatif = pd.DataFrame(st.session_state.data_alternatif, columns=columns, index=index)
 
-# Tombol hitung 
-Hitung= st.button("Hitung")
+    # Tombol hitung 
+    Hitung= st.button("Hitung")
 
 # Setelah Klik Tombol Hitung
 if Hitung:
