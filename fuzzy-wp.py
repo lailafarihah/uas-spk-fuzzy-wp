@@ -22,10 +22,10 @@ if 'kriteria' in st.session_state and 'alternatif' in st.session_state:
     kriteria = st.session_state.kriteria
     alternatif = st.session_state.alternatif
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     # Input nama kriteria
     with col1:
-        st.subheader("Nama Kriteria")
+        st.write("##### Nama Kriteria")
         if 'kriteria_nama' not in st.session_state:
             st.session_state.kriteria_nama = [''] * int(kriteria)
         for i in range(int(kriteria)):
@@ -33,7 +33,7 @@ if 'kriteria' in st.session_state and 'alternatif' in st.session_state:
 
     # Input jenis kriteria
     with col2:
-        st.subheader("Jenis Kriteria")
+        st.write("##### Jenis Kriteria")
         if 'kriteria_jenis' not in st.session_state:
             st.session_state.kriteria_jenis = [''] * int(kriteria)
         for i in range(int(kriteria)):
@@ -44,9 +44,22 @@ if 'kriteria' in st.session_state and 'alternatif' in st.session_state:
                 key=f"jenis_kriteria_{i}"
             )
 
-    # Input nama alternatif
+    # Input jenis kriteria
     with col3:
-        st.subheader("Nama Alternatif")
+        st.write("##### Fuzzy")
+        if 'jenis_fuzzy' not in st.session_state:
+            st.session_state.jenis_fuzzy = [''] * int(kriteria)
+        for i in range(int(kriteria)):
+            st.session_state.jenis_fuzzy[i] = st.selectbox(
+                f"Fuzzy C{i + 1}",
+                options=["linear naik", "linear turun"],
+                index=0 if st.session_state.jenis_fuzzy[i] == "" else ["linear naik", "linear turun"].index(st.session_state.jenis_fuzzy[i]),
+                key=f"fuzzy_{i}"
+            )
+
+    # Input nama alternatif
+    with col4:
+        st.write("##### Nama Alternatif")
         if 'alternatif_nama' not in st.session_state:
             st.session_state.alternatif_nama = [''] * int(alternatif)
         for i in range(int(alternatif)):
@@ -81,6 +94,7 @@ if 'kriteria' in st.session_state and 'alternatif' in st.session_state:
     index = [f"A{i+1}" for i in range(alternatif)]
     df_alternatif = pd.DataFrame(st.session_state.data_alternatif, columns=columns, index=index)
 
+
 if 'kriteria_nama' in st.session_state and 'kriteria_jenis' in st.session_state and 'alternatif_nama' in st.session_state and 'bobot' in st.session_state and 'data_alternatif' in st.session_state:
     # Tombol hitung 
     Hitung= st.button("Hitung")
@@ -96,8 +110,8 @@ if 'kriteria_nama' in st.session_state and 'kriteria_jenis' in st.session_state 
         st.write("### Data Asli")
         st.table(df_alternatif)
 
-        # Fungsi untuk menghitung keanggotaan fuzzy dengan linear naik
-        def linear_rise_membership(x, a, b):
+        # Fungsi untuk menghitung keanggotaan fuzzy
+        def linear_rise_membership(x, a, b): #linear naik
             if x <= a:
                 return 0
             elif a < x < b:
@@ -105,30 +119,35 @@ if 'kriteria_nama' in st.session_state and 'kriteria_jenis' in st.session_state 
             else:
                 return 1
 
-        # Tentukan nilai a = 1
+        def linear_fall_membership(x, a, b):  # linear turun
+            if x <= a:
+                return 1
+            elif a < x <= b:  # Gunakan nilai b yang dikirim ke fungsi
+                return (b - x) / (b - a)
+            else:  # x > b
+                return 0
+
+        # Tentukan nilai a dan b 
         a = [1] * kriteria  # Titik awal untuk semua kriteria adalah 1
+        b = [max([st.session_state.data_alternatif[i][j] for i in range(alternatif)]) for j in range(kriteria)]  # Nilai terbesar di setiap kriteria
+        b_turun = [val + 1 for val in b]
 
-        # Tentukan nilai b sebagai nilai terbesar dari masing-masing alternatif untuk setiap kriteria
-        b = []
-        for j in range(kriteria):
-            # Mencari nilai terbesar pada kolom ke-j
-            max_value = max([st.session_state.data_alternatif[i][j] for i in range(alternatif)])
-            b.append(max_value)
-
-        # Menghitung keanggotaan fuzzy untuk setiap alternatif terhadap kriteria
+        # Hitung keanggotaan fuzzy berdasarkan jenis fuzzy
         fuzzy_data = []
         for i in range(alternatif):
             fuzzy_row = []
             for j in range(kriteria):
-                # Menghitung keanggotaan fuzzy untuk setiap data alternatif
-                fuzzy_value = linear_rise_membership(st.session_state.data_alternatif[i][j], a[j], b[j])
+                x = st.session_state.data_alternatif[i][j]
+                if st.session_state.jenis_fuzzy[j] == "linear naik":
+                    fuzzy_value = linear_rise_membership(x, a[j], b[j])
+                else:  # "linear turun"
+                    fuzzy_value = linear_fall_membership(x, a[j], b_turun[j])  # Gunakan b_turun[j]
                 fuzzy_row.append(fuzzy_value)
             fuzzy_data.append(fuzzy_row)
 
         # Membuat DataFrame untuk menampilkan hasil keanggotaan fuzzy
         df_fuzzy = pd.DataFrame(fuzzy_data, columns=columns, index=index)
 
-        # Tampilkan tabel keanggotaan fuzzy
         st.write("### Data Setelah Fuzzy")
         st.table(df_fuzzy)
 
